@@ -75,8 +75,16 @@ The three design decisions that carry the weight:
 
 ## Do these two things before it can work
 
-The workflow is **active and will fire at 06:15 UTC daily**. Until both of
-these are done it will run, publish nothing, and fail at the deploy step.
+The workflow is **paused** — disabled in the Actions tab on 2026-08-21,
+pending API credits, so nothing fires and no failure mail arrives. Do both of
+the following before re-enabling it; without them a run publishes nothing and
+fails at the deploy step.
+
+Re-enable with:
+
+```bash
+gh workflow enable "Daily publish" --repo the-abraar/The-Article-Depot
+```
 
 1. **Add `ANTHROPIC_API_KEY`** under Settings → Secrets and variables →
    Actions. Without it every trend is skipped.

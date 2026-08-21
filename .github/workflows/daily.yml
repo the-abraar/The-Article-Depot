@@ -1,5 +1,15 @@
 name: Daily publish
 
+# PAUSED. Disabled in the repository's Actions tab (state:
+# disabled_manually), so the schedule below does not fire. The cron is left
+# intact deliberately -- re-enabling is one command, with no diff to review:
+#
+#     gh workflow enable "Daily publish" --repo the-abraar/The-Article-Depot
+#
+# Paused on 2026-08-21 pending API credits. Enable it only once
+# ANTHROPIC_API_KEY is set and Pages -> Source is "GitHub Actions"; without
+# both, every run publishes nothing and fails at the deploy step.
+
 on:
   schedule:
     # 06:15 UTC daily. Off the hour on purpose — the top of the hour is when
