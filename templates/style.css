@@ -1,0 +1,104 @@
+:root {
+  --bg: #f7f9fc;
+  --card: #ffffff;
+  --ink: #1a1d24;
+  --ink-sub: #5a6472;
+  --brand: #4d4dff;
+  --hair: #e2e7ef;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1218;
+    --card: #171b23;
+    --ink: #f2f5f9;
+    --ink-sub: #9aa5b4;
+    --brand: #8f8fff;
+    --hair: #262c37;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.65;
+}
+
+header {
+  background: var(--brand);
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand { color: #fff; font-weight: 700; font-size: 1.15rem; text-decoration: none; }
+
+header nav ul {
+  margin: 0; padding: 0; list-style: none;
+  display: flex; flex-wrap: wrap; gap: 18px;
+}
+
+header nav a { color: #fff; text-decoration: none; font-weight: 600; opacity: .85; }
+header nav a:hover { opacity: 1; text-decoration: underline; }
+header nav li.active a { opacity: 1; text-decoration: underline; }
+
+main {
+  background: var(--card);
+  padding: clamp(20px, 5vw, 48px);
+  margin: clamp(16px, 4vw, 40px) auto;
+  max-width: 760px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+}
+
+h1 { font-size: clamp(1.7rem, 4.5vw, 2.4rem); line-height: 1.2; margin: 0 0 .4em; }
+h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); margin: 1.8em 0 .5em; }
+h3 { margin: 0 0 .3em; font-size: 1.15rem; }
+p  { margin: 0 0 1.1em; }
+
+.tagline { color: var(--ink-sub); font-size: 1.05rem; }
+.dek { font-size: 1.15rem; color: var(--ink-sub); }
+.meta { color: var(--ink-sub); font-size: .9rem; }
+
+a { color: var(--brand); }
+
+.article-list { list-style: none; padding: 0; margin: 0; }
+.article-list > li {
+  padding: 20px 0;
+  border-top: 1px solid var(--hair);
+}
+.article-list > li:first-child { border-top: none; }
+.article-list h3 a { text-decoration: none; }
+.article-list h3 a:hover { text-decoration: underline; }
+
+.sources {
+  margin-top: 2.5em;
+  padding-top: 1.2em;
+  border-top: 1px solid var(--hair);
+  font-size: .95rem;
+}
+.sources ul { padding-left: 1.2em; }
+.sources li { margin-bottom: .4em; }
+
+.mailto { font-weight: 600; }
+
+footer {
+  background: var(--brand);
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+  font-size: .9rem;
+}
+footer p { margin: 0; }
+
+img, video { max-width: 100%; height: auto; }
+
+table { display: block; overflow-x: auto; }

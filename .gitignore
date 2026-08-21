@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Generated site — rebuilt from depot.db on every run, deployed by CI.
+# depot.db itself IS tracked: it holds the idempotency keys and the
+# trend last-seen dates the prune trigger reads.
+site/
+
+# Local
+.DS_Store
+.pytest_cache/

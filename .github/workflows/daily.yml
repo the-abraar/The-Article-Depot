@@ -1,0 +1,74 @@
+name: Daily publish
+
+on:
+  schedule:
+    # 06:15 UTC daily. Off the hour on purpose — the top of the hour is when
+    # every other cron on the platform fires and runners queue.
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+
+# A slow run must never overlap the next scheduled firing. Without this the
+# two runs would race on the same trend, and only the UNIQUE claim in the
+# database would be standing between them and a duplicate article.
+concurrency:
+  group: depot-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # commit the state database back
+  pages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Run the pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEPOT_GEO: ${{ vars.DEPOT_GEO || 'US' }}
+          DEPOT_MAX_TRENDS: ${{ vars.DEPOT_MAX_TRENDS || '5' }}
+          DEPOT_CONTACT_EMAIL: ${{ vars.DEPOT_CONTACT_EMAIL }}
+        run: depot -v run
+
+      - name: Persist pipeline state
+        run: |
+          # depot.db carries the idempotency keys and the trend last-seen
+          # dates the prune trigger reads. Losing it would republish
+          # everything, so it is committed rather than cached.
+          if [[ -n "$(git status --porcelain depot.db)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add depot.db
+            git commit -m "chore: pipeline state for $(date -u +%F)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest -q

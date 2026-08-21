@@ -1,0 +1,85 @@
+"""Grounding material: extraction quality and the min-sources floor."""
+
+from __future__ import annotations
+
+from conftest import FakeHTTP, FakeResponse
+from pipeline.fetcher import PoliteFetcher
+from pipeline.sources import extract_text, gather
+from pipeline.trends import NewsItem, Trend
+
+PROSE = ("The rover arrived at the crater rim on Tuesday, the agency said in a "
+         "briefing that lasted about an hour and covered the traverse in detail. ")
+
+
+def test_scripts_and_chrome_are_stripped():
+    page = ("<html><head><script>evil()</script><style>.a{}</style></head>"
+            "<body><nav>Home About</nav><p>" + PROSE + "</p>"
+            "<footer>Cookie banner</footer></body></html>")
+    out = extract_text(page)
+    assert "evil()" not in out and ".a{}" not in out
+    assert "Cookie banner" not in out           # short line, dropped as chrome
+    assert "crater rim" in out
+
+
+def test_entities_are_unescaped():
+    assert "AT&T" in extract_text("<p>" + "AT&amp;T said it would expand. " * 8 + "</p>")
+
+
+def test_extraction_is_length_capped():
+    assert len(extract_text("<p>" + "word " * 20000 + "</p>", max_chars=500)) <= 500
+
+
+def _fetcher(cfg, routes):
+    return PoliteFetcher(cfg=cfg, opener=FakeHTTP(routes), sleep=lambda s: None,
+                         clock=lambda: 0.0)
+
+
+def test_gather_collects_usable_sources(cfg):
+    trend = Trend(title="Mars", slug="mars", news=[
+        NewsItem(title="A", url="https://a.example/1", publisher="A News"),
+        NewsItem(title="B", url="https://b.example/1", publisher="B News"),
+    ])
+    routes = {
+        "https://a.example/robots.txt": FakeResponse(b""),
+        "https://b.example/robots.txt": FakeResponse(b""),
+        "https://a.example/1": FakeResponse(("<p>" + PROSE * 3 + "</p>").encode()),
+        "https://b.example/1": FakeResponse(("<p>" + PROSE * 3 + "</p>").encode()),
+    }
+    found = gather(trend, _fetcher(cfg, routes), cfg)
+    assert len(found) == 2
+    assert all(len(s.text) > 200 for s in found)
+
+
+def test_robots_blocked_source_is_skipped_not_fatal(cfg):
+    trend = Trend(title="Mars", slug="mars", news=[
+        NewsItem(title="A", url="https://a.example/1", publisher="A"),
+        NewsItem(title="B", url="https://b.example/1", publisher="B"),
+    ])
+    routes = {
+        "https://a.example/robots.txt": FakeResponse(b"User-agent: *\nDisallow: /"),
+        "https://b.example/robots.txt": FakeResponse(b""),
+        "https://b.example/1": FakeResponse(("<p>" + PROSE * 3 + "</p>").encode()),
+    }
+    found = gather(trend, _fetcher(cfg, routes), cfg)
+    assert [s.url for s in found] == ["https://b.example/1"]
+
+
+def test_feed_snippets_backfill_when_pages_unreachable(cfg):
+    """Paywalled links must not leave a trend ungrounded if the feed has text."""
+    long_snippet = "The agency confirmed the rover reached the rim on Tuesday. " * 3
+    trend = Trend(title="Mars", slug="mars", news=[
+        NewsItem(title="A", url="https://a.example/1", snippet=long_snippet),
+        NewsItem(title="B", url="https://b.example/1", snippet=long_snippet),
+    ])
+    routes = {}                       # every fetch 404s
+    found = gather(trend, _fetcher(cfg, routes), cfg)
+    assert len(found) >= cfg.min_sources
+    assert all(s.text for s in found)
+
+
+def test_stub_pages_are_not_counted_as_sources(cfg):
+    trend = Trend(title="Mars", slug="mars", news=[
+        NewsItem(title="A", url="https://a.example/1")])
+    routes = {"https://a.example/robots.txt": FakeResponse(b""),
+              "https://a.example/1": FakeResponse(b"<p>too short</p>")}
+    assert gather(trend, _fetcher(cfg, routes), cfg) == []

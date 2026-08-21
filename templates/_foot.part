@@ -1,0 +1,5 @@
+  <footer>
+    <p>&copy; {{site}}, {{year}}. Articles are generated from cited reporting and checked before publishing.</p>
+  </footer>
+</body>
+</html>

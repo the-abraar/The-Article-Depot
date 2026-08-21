@@ -1,0 +1,22 @@
+[project]
+name = "article-depot"
+version = "1.0.0"
+description = "Unattended pipeline: Google Trends -> grounded LLM articles -> static site, with pruning."
+requires-python = ">=3.11"
+dependencies = ["anthropic>=1.0.0"]
+
+[project.scripts]
+depot = "pipeline.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pipeline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

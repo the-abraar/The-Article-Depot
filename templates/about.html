@@ -1,0 +1,15 @@
+  <main>
+    <h1>About</h1>
+    <p>{{site}} publishes explainers on trending search topics. The process is automated end to end, and we would rather describe it plainly than imply a newsroom that does not exist.</p>
+    <h2>How an article gets here</h2>
+    <ol>
+      <li>We read the day's trending topics from Google Trends.</li>
+      <li>For each topic we fetch the news stories behind it, respecting each site's robots.txt and crawl-delay.</li>
+      <li>A language model drafts an explainer using <em>only</em> the text of those sources, recording which source supports each factual claim.</li>
+      <li>A separate model checks the draft against the sources and flags any claim they do not support.</li>
+      <li>Anything that fails a check is not published. Articles that pass list their sources at the foot of the page.</li>
+    </ol>
+    <h2>What this means for you</h2>
+    <p>These articles are machine-written. They are grounded in cited reporting and automatically checked, but no human reads every one before it publishes. Follow the sources for anything that matters, and treat the originals as authoritative.</p>
+    <p>Articles whose topic has gone quiet are removed automatically, so the site stays current rather than accumulating dead pages.</p>
+  </main>
