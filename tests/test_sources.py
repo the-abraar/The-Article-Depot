@@ -77,6 +77,20 @@ def test_feed_snippets_backfill_when_pages_unreachable(cfg):
     assert all(s.text for s in found)
 
 
+def test_trailing_teaser_tail_is_dropped():
+    """A 'More from ...' module bolted onto the end must not pollute grounding."""
+    article = "<article><p>" + PROSE * 4 + "</p></article>"
+    teaser1 = ("<section><div><p>Garth Brooks announces a surprise new tour "
+               "for twenty twenty six according to organizers.</p></div></section>")
+    teaser2 = ("<section><div><p>Prince Harry was spotted at a charity gala "
+               "over the weekend according to reports.</p></div></section>")
+    page = "<html><body>" + article + teaser1 + teaser2 + "</body></html>"
+    out = extract_text(page)
+    assert "crater rim" in out
+    assert "Garth Brooks" not in out
+    assert "Prince Harry" not in out
+
+
 def test_stub_pages_are_not_counted_as_sources(cfg):
     trend = Trend(title="Mars", slug="mars", news=[
         NewsItem(title="A", url="https://a.example/1")])

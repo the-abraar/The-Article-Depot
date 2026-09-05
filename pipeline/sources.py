@@ -58,7 +58,31 @@ def extract_text(raw_html: str, max_chars: int = 6000) -> str:
     # Drop nav crumbs and cookie-banner noise: very short lines carry no claims.
     lines = [ln for ln in text.split("\n") if len(ln) > 40 or not ln]
     text = "\n".join(lines).strip()
+    text = _main_block(text)
     return text[:max_chars]
+
+
+def _main_block(text: str, min_ratio: float = 0.3) -> str:
+    """Keep the article body; drop a trailing tail of unrelated teasers.
+
+    A "More from ..." module bolted onto the end of a page survives the
+    chrome strip because it isn't nav/aside/footer, just plain divs. It shows
+    up as a run of blank-line-separated blocks that are each much smaller
+    than the real article body, so once the largest block is found, a
+    sharply smaller block after it is the teaser tail, not more of the story.
+    """
+    blocks = [b for b in re.split(r"\n\s*\n", text) if b.strip()]
+    if len(blocks) <= 1:
+        return text
+    sizes = [len(b) for b in blocks]
+    peak = max(range(len(blocks)), key=sizes.__getitem__)
+    threshold = sizes[peak] * min_ratio
+    end = peak
+    for i in range(peak + 1, len(blocks)):
+        if sizes[i] < threshold:
+            break
+        end = i
+    return "\n\n".join(blocks[:end + 1])
 
 
 def gather(trend, fetcher, cfg) -> list[Source]:
