@@ -20,7 +20,7 @@ from . import publish as publish_mod
 from . import quality, sources as sources_mod, trends as trends_mod
 from .fetcher import Blocked, PoliteFetcher
 from .generate import RefusalError, draft_slug, full_text, generate
-from .store import Store, today
+from .store import TERMINAL_STATES, Store, today
 
 log = logging.getLogger(__name__)
 
@@ -36,8 +36,17 @@ def process_trend(trend, store, cfg, fetcher, client, published_texts) -> str:
     run_date = today()
     article_id = store.claim_article(trend.slug, run_date)
     if article_id is None:
-        log.info("%s already handled for %s", trend.slug, run_date)
-        return "duplicate"
+        # Not a fresh claim -- either already finished today, or a previous
+        # run claimed it and died before reaching a terminal state. The
+        # latter must be resumed, not skipped, or a mid-run crash silently
+        # drops that trend for the rest of the day.
+        existing = store.article_for(trend.slug, run_date)
+        if existing is None or existing["state"] in TERMINAL_STATES:
+            log.info("%s already handled for %s", trend.slug, run_date)
+            return "duplicate"
+        article_id = existing["id"]
+        log.info("resuming %s for %s (was %r)",
+                 trend.slug, run_date, existing["state"])
 
     # --- grounding sources -------------------------------------------------
     found = sources_mod.gather(trend, fetcher, cfg)

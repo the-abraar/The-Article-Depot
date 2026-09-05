@@ -184,6 +184,27 @@ def test_site_has_no_broken_internal_links(cfg, patched):
             assert target.exists(), f"{page.name} links to missing {href}"
 
 
+def test_a_row_stuck_from_a_crashed_run_is_resumed_not_skipped(cfg, patched):
+    """A trend claimed by a run that then died mid-trend must be retried the
+    next time the same day is run, not treated as already handled."""
+    store = Store(cfg.db_path)
+    store.claim_article("mars-rover", today())   # claimed, never finished
+    store.close()
+
+    patched["client"] = FakeClient([
+        FakeParsed(make_draft()), FakeParsed(make_audit())])
+    stats = run_mod.run(cfg, limit=1)
+
+    assert stats["published"] == 1, stats
+    assert stats["duplicate"] == 0
+    store = Store(cfg.db_path)
+    try:
+        rows = store.conn.execute("SELECT COUNT(*) c FROM articles").fetchone()
+        assert rows["c"] == 1, "the stuck row must be reused, not duplicated"
+    finally:
+        store.close()
+
+
 def test_run_survives_a_generation_failure(cfg, patched):
     patched["client"] = FakeClient([RuntimeError("api exploded")])
     stats = run_mod.run(cfg, limit=1)

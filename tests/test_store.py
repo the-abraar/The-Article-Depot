@@ -31,6 +31,12 @@ def test_terminal_states_are_not_resumable(store: Store):
     assert store.resumable("2026-08-21") == []
 
 
+def test_article_for_finds_any_state(store: Store):
+    aid = store.claim_article("mars", "2026-08-21")
+    assert store.article_for("mars", "2026-08-21")["id"] == aid
+    assert store.article_for("venus", "2026-08-21") is None
+
+
 def test_slug_collision_detected(store: Store):
     aid = store.claim_article("mars", "2026-08-21")
     store.save_draft(aid, "Mars", "mars-rover", {"title": "Mars"})

@@ -145,6 +145,13 @@ class Store:
             (run_date,),
         ))
 
+    def article_for(self, trend_slug: str, run_date: str) -> sqlite3.Row | None:
+        """The existing row for (trend, day), in whatever state it's in."""
+        return self.conn.execute(
+            "SELECT * FROM articles WHERE trend_slug = ? AND run_date = ?",
+            (trend_slug, run_date),
+        ).fetchone()
+
     def get_article(self, article_id: int) -> sqlite3.Row | None:
         return self.conn.execute(
             "SELECT * FROM articles WHERE id = ?", (article_id,)).fetchone()
