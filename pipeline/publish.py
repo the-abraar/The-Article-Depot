@@ -37,8 +37,9 @@ def _nav(active: str, depth: int = 0) -> str:
     up = "../" * depth
     items = [("Home", f"{up}index.html"), ("Articles", f"{up}articles.html"),
              ("About", f"{up}about.html"), ("Contact", f"{up}contact.html")]
+    active_cls = ' class="active"'      # no backslash in the f-string: 3.11 rejects it
     return "\n".join(
-        f'        <li{" class=\"active\"" if name == active else ""}>'
+        f'        <li{active_cls if name == active else ""}>'
         f'<a href="{href}">{name}</a></li>'
         for name, href in items)
 
