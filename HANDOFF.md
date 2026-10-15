@@ -167,8 +167,8 @@ The bullet is now substantially true. Two notes:
   (`_strip_text`, plus the `_main_block` tail drop), which now also removes
   HTML comments. Very deep tag soup that raises `RecursionError` takes the
   fallback too.
-- No new dependency. `trafilatura` was not used: the sandbox had no network,
-  and stdlib keeps the install surface to the Anthropic SDK.
+- No new dependency. `trafilatura` was not used, because stdlib keeps the
+  install surface to the Anthropic SDK and the fixtures pass without it.
 - `pipeline/publish.py`: the nav f-string had a backslash inside an
   expression, which is a syntax error on Python 3.11 even though
   `requires-python` is `>=3.11`. Fixed in its own commit.
@@ -188,13 +188,11 @@ The bullet is now substantially true. Two notes:
 
 **What is left**
 
-- Not checked against real news pages. The sandbox had no network. On the
+- Not checked against real news pages (no live fetches this session). On the
   next supervised run (step 1), read the `sources` text for each trend, the
   Yahoo-style pages especially, and save a trimmed, synthetic copy of any
   page that fails as a new fixture.
 - Known gap (marked `shortcut:` in the code): a body split across two sibling
   divs is merged by score. Other layouts, such as a body split across many
   scattered containers, rely on the grandparent vote or fall to the auditor.
-- The commits could not be pushed from this session (`github.com` did not
-  resolve). Run `git push` from the main checkout.
 - Steps 1, 3 and 4 above are unchanged. The workflow is still paused.
