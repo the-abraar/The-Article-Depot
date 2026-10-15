@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from conftest import FakeHTTP, FakeResponse
 from pipeline.fetcher import PoliteFetcher
 from pipeline.sources import extract_text, gather
@@ -97,3 +99,38 @@ def test_stub_pages_are_not_counted_as_sources(cfg):
     routes = {"https://a.example/robots.txt": FakeResponse(b""),
               "https://a.example/1": FakeResponse(b"<p>too short</p>")}
     assert gather(trend, _fetcher(cfg, routes), cfg) == []
+
+
+# --- main-content extraction on synthetic fixtures ---------------------------
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _fixture(name: str) -> str:
+    return extract_text((FIXTURES / name).read_text())
+
+
+def test_teaser_rail_and_nav_stay_out_of_grounding():
+    out = _fixture("teaser_rail.html")
+    assert out.startswith("The rover arrived at the crater rim")
+    assert "sampling arm" in out                     # last paragraph kept
+    assert "reroute twice, adding" in out            # inline link text kept
+    for noise in ("Garth Brooks", "country singer", "Prince Harry",
+                  "Stock futures", "Read more", "Trending", "Copyright",
+                  "Sports", "__STATE__", "margin"):
+        assert noise not in out, noise
+
+
+def test_body_split_across_sibling_divs_is_kept_whole():
+    out = _fixture("split_body.html")
+    assert "seven to two" in out and "eighteen months" in out
+    assert out.index("seven to two") < out.index("eighteen months")
+    assert "newsletter" not in out                   # promo between the halves
+    assert "Police seek" not in out and "Library" not in out
+
+
+def test_page_without_paragraph_markup_falls_back_to_stripper():
+    out = _fixture("no_paragraphs.html")
+    assert "ferry terminal" in out and "island route" in out
+    assert "Synthetic" not in out                    # HTML comment not leaked
+    assert "Contact us" not in out

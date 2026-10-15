@@ -149,3 +149,52 @@ The bullet is now substantially true. Two notes:
   your words" questions. All three now have concrete answers in this repo:
   the crawler manners are in `fetcher.py`, the quality gate is `quality.py`,
   and the staleness trigger is the docstring at the top of `prune.py`.
+
+## 2026-10-15: main-content extraction (step 2)
+
+**What changed**
+
+- `pipeline/sources.py`: `extract_text(raw_html, max_chars)` keeps its
+  signature, but now picks the article first. It parses the page with stdlib
+  `html.parser` and runs a readability-style score: each prose `<p>` votes for
+  its parent and grandparent, and the vote is discounted by link density. Only
+  the winning container is kept, plus a sibling that scores at least half as
+  high (for a body split in two divs). Inside it, link lists ("Read more: ...")
+  and lines of 40 characters or less are dropped. Nav, header, footer, aside,
+  forms, figures and elements whose class/id says related, promo, sidebar,
+  newsletter, trending and the like are skipped. If that yields under 200
+  characters (no `<p>` markup), it falls back to the old stripper
+  (`_strip_text`, plus the `_main_block` tail drop), which now also removes
+  HTML comments. Very deep tag soup that raises `RecursionError` takes the
+  fallback too.
+- No new dependency. `trafilatura` was not used: the sandbox had no network,
+  and stdlib keeps the install surface to the Anthropic SDK.
+- `pipeline/publish.py`: the nav f-string had a backslash inside an
+  expression, which is a syntax error on Python 3.11 even though
+  `requires-python` is `>=3.11`. Fixed in its own commit.
+- `tests/fixtures/*.html`: three synthetic pages, no copied content. One is a
+  portal story with a "More from" teaser rail, an in-body "Read more" list, a
+  trending sidebar and nav. One has a body split across sibling divs with a
+  newsletter promo between the halves. One has no `<p>` markup. On these
+  fixtures the old stripper leaked the promo, the rail links and the
+  "Read more" links.
+
+**How verified**
+
+- `python -m pytest -q` on Python 3.11 gives 63 passed (60 before, plus 3
+  fixture tests). No network, no API calls.
+- A synthetic 533 KB page extracts in about 0.07 s. A page nested 5000 levels
+  deep falls back cleanly.
+
+**What is left**
+
+- Not checked against real news pages. The sandbox had no network. On the
+  next supervised run (step 1), read the `sources` text for each trend, the
+  Yahoo-style pages especially, and save a trimmed, synthetic copy of any
+  page that fails as a new fixture.
+- Known gap (marked `shortcut:` in the code): a body split across two sibling
+  divs is merged by score. Other layouts, such as a body split across many
+  scattered containers, rely on the grandparent vote or fall to the auditor.
+- The commits could not be pushed from this session (`github.com` did not
+  resolve). Run `git push` from the main checkout.
+- Steps 1, 3 and 4 above are unchanged. The workflow is still paused.

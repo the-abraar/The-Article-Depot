@@ -141,7 +141,7 @@ All via environment variables; defaults in `pipeline/config.py`.
 .venv/bin/python -m pytest -q
 ```
 
-57 tests, no network and no API calls — the fetcher takes an injected URL map
+63 tests, no network and no API calls — the fetcher takes an injected URL map
 and the client takes scripted structured outputs, so every guardrail is driven
 into its failure mode deliberately: robots disallow, `Crawl-delay` honoured and
 never lowered, `Retry-After`, host dropped after repeated 403s, claims citing a
@@ -160,8 +160,10 @@ not Secrets.
 
 - Articles are machine-written. They are grounded and automatically checked,
   but no human reads every one before it publishes; the About page says so.
-- Extraction is a dependency-free heuristic stripper, not a full readability
-  implementation. Unusual page structures yield thinner grounding, which shows
+- Extraction is a dependency-free, readability-style main-content pick
+  (stdlib `html.parser`), with the old tag stripper as a fallback for pages
+  without paragraph markup. It is tested on synthetic fixtures, not a corpus
+  of real sites; unusual page structures yield thinner grounding, which shows
   up as a skipped trend rather than a worse article.
 - Search engines treat scaled automated content as spam when it exists to game
   rankings rather than help readers. Grounding, citation and pruning are what
