@@ -47,6 +47,8 @@ def extract_text(raw_html: str, max_chars: int = 6000) -> str:
     the one container the article's paragraphs cluster in, so teaser rails,
     "more from" modules and nav that sit beside it never reach the grounding.
     Pages it cannot read (no real <p> prose) fall back to the plain stripper.
+    A page whose only prose is short (a video page's caption) stays short, so
+    gather() drops it as a stub: the stripper would return its teaser rail.
     Deliberately dependency-free: stdlib html.parser only, so the pipeline's
     install surface stays the Anthropic SDK alone.
     """
@@ -54,7 +56,7 @@ def extract_text(raw_html: str, max_chars: int = 6000) -> str:
         text = _article_text(raw_html)
     except RecursionError:              # pathological nesting: tag soup
         text = ""
-    if len(text) < 200:                 # same floor gather() uses for a stub
+    if not text:
         text = _strip_text(raw_html)
     return text[:max_chars]
 
@@ -146,7 +148,7 @@ def _blocks(node: _Node) -> list[tuple[str, int]]:
         if n.tag in _BLOCK:
             flush()
 
-    walk(node, node.tag == "a")
+    walk(node, _in_link(node))  # a teaser card is <a><div><p>: the link is above the node
     flush()
     return out
 
@@ -154,6 +156,14 @@ def _blocks(node: _Node) -> list[tuple[str, int]]:
 def _skipped(node: _Node) -> bool:
     while node is not None:
         if node.skip:
+            return True
+        node = node.parent
+    return False
+
+
+def _in_link(node: _Node) -> bool:
+    while node is not None:
+        if node.tag == "a":
             return True
         node = node.parent
     return False

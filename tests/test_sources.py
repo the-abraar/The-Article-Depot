@@ -134,3 +134,13 @@ def test_page_without_paragraph_markup_falls_back_to_stripper():
     assert "ferry terminal" in out and "island route" in out
     assert "Synthetic" not in out                    # HTML comment not leaked
     assert "Contact us" not in out
+
+
+def test_linked_teaser_cards_do_not_stand_in_for_a_short_page():
+    # Live check 2026-10-22: a Yahoo video page (a one-line caption) yielded a
+    # teaser card's text, then its whole teaser rail via the fallback.
+    out = _fixture("video_teaser_cards.html")
+    assert "amateur astronomers" in out
+    for noise in ("apple harvest", "bridge", "Night buses"):
+        assert noise not in out, noise
+    assert len(out) < 200                            # gather() drops it as a stub

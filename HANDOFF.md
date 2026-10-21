@@ -196,3 +196,59 @@ The bullet is now substantially true. Two notes:
   divs is merged by score. Other layouts, such as a body split across many
   scattered containers, rely on the grandparent vote or fall to the auditor.
 - Steps 1, 3 and 4 above are unchanged. The workflow is still paused.
+
+## 2026-10-22: extractor checked against live news pages
+
+**What was run**
+
+Fetch only, no API key, nothing published. One request for the US Trends
+feed (10 trends, 30 news links), then one page each from 8 distinct hosts
+in it, Yahoo first, through `PoliteFetcher` (robots.txt, 2 s crawl delay,
+the bot User-Agent). Pages stayed in a scratch directory, not the repo.
+
+| # | Page (publisher, kind) | Extracted | Verdict |
+|---|---|---|---|
+| 0 | Yahoo Sports, story | 4560 chars | Clean: body only, no teasers |
+| 1 | Yahoo Actualités (fr), story | 2071 | Clean |
+| 2 | Yahoo, video page | 351 | **Bad**: an unrelated teaser card ("Many books will provide...") instead of the clip's caption |
+| 3 | Yahoo Malaysia (Deadline syndication), photo story | 2365 | Clean, plus the syndicator's one-line newsletter plug |
+| 4 | Pulse Sports Nigeria, story | 3110 | Clean, plus an image credit and an embedded tweet |
+| 5 | Yardbarker, story | 1040 | Clean |
+| 6 | Eurosport (fr), live commentary | 1773 | Usable. No `<p>` prose, so the stripper ran; one nav line and a repeated headline leak |
+| 7 | Le Figaro (fr), live blog | 804 | Under-extracted: one live post (the line-ups) of about 12,400 chars of prose spread over 99 post containers |
+
+The Garth Brooks style teaser tail from the first live run did not show up
+on any story page.
+
+**What changed**
+
+- `pipeline/sources.py`, page 2: Yahoo teaser cards are
+  `<article><a><div><p>`. `_blocks` only counted link text when the walk
+  started *at* an `<a>`, so a paragraph or container sitting inside a link
+  scored as plain prose and won. It now checks the node's ancestors
+  (`_in_link`). That left only the 172-char caption, and the `< 200` floor
+  then sent the page to the stripper, which returned the whole teaser rail
+  (4419 chars). The stripper now runs only when the readability pass finds
+  no prose at all; a short pick stays short and `gather()` drops the page as
+  a stub, which is the right call for a video page. Pages 0, 1 and 3 to 7
+  extract byte-for-byte the same as before.
+- `tests/fixtures/video_teaser_cards.html` (synthetic) and
+  `test_linked_teaser_cards_do_not_stand_in_for_a_short_page`. It fails on
+  the previous extractor.
+
+**How verified**
+
+- `python -m pytest -q` on Python 3.11: 64 passed. No network in tests.
+
+**What is left**
+
+- Live blogs (page 7) are the "many scattered containers" gap noted above:
+  the winner is one post. That loses grounding, it does not add noise. Not
+  fixed: it needs a merge rule for many similar sibling posts, plus a
+  fixture.
+- Page 6 shows the stripper still keeps a nav line longer than 40 chars.
+- Trade-off of the fallback change: a page whose body is in `<div>`s but
+  that has one stray prose `<p>` (a cookie notice, say) now yields that
+  `<p>` and is dropped as a stub instead of being stripped. It fails toward
+  fewer sources, not noisier ones.
+- The workflow is still paused.
