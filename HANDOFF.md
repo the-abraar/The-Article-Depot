@@ -252,3 +252,29 @@ on any story page.
   `<p>` and is dropped as a stub instead of being stripped. It fails toward
   fewer sources, not noisier ones.
 - The workflow is still paused.
+
+## 2026-10-30: live blogs keep every post
+
+**What changed**
+
+- `pipeline/sources.py`: after the winner is picked, every candidate with
+  the same tag and the same class/id as the winner is treated as a post of
+  a live blog. With three or more, all of them are kept, in page order.
+  Posts vary in length, so they match by shape, not by score. A winner
+  without a class or id never merges this way.
+- `tests/fixtures/live_blog.html` (synthetic, four posts plus a teaser
+  column) and `test_live_blog_keeps_every_post`. It fails on the previous
+  extractor, which kept only the longest post.
+
+**How verified**
+
+- `python -m pytest -q` on Python 3.11: 65 passed. The four older fixtures
+  extract byte-for-byte the same as before.
+
+**What is left**
+
+- Not re-run against the live Le Figaro page (no live fetches this
+  session). A live blog whose posts carry per-post classes (for example a
+  post id in `class`) will not match and still keeps one post.
+- Page 6's nav line in the stripper fallback is unchanged.
+- Steps 1, 3 and 4 still need an API key. The workflow is still paused.

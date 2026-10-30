@@ -144,3 +144,13 @@ def test_linked_teaser_cards_do_not_stand_in_for_a_short_page():
     for noise in ("apple harvest", "bridge", "Night buses"):
         assert noise not in out, noise
     assert len(out) < 200                            # gather() drops it as a stub
+
+
+def test_live_blog_keeps_every_post():
+    # Live check 2026-10-22: a live blog (Le Figaro) kept one post of ~99.
+    out = _fixture("live_blog.html")
+    for post in ("four seconds", "eight knots", "Line-ups", "wrist injury",
+                 "ferry timetable"):
+        assert post in out, post
+    assert out.index("four seconds") < out.index("ferry timetable")
+    assert "marathon" not in out and "Swimming pool" not in out
