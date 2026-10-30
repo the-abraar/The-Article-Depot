@@ -215,10 +215,12 @@ def _article_text(raw_html: str) -> str:
     # a teaser item or promo beside it does not.
     parts = [n for n in top.parent.children
              if n is top or scores.get(n, 0) >= scores[top] / 2]
-    # A live blog: one container per post, each a cousin of the winner with
-    # the same tag and class. Posts vary in length, so match shape, not score.
+    # A live blog: one container per post, each a cousin of the winner (same
+    # grandparent, tag and class). Posts vary in length: match shape, not score.
+    group = top.parent and top.parent.parent
     posts = [n for n in candidates if top.hint and n.tag == top.tag
-             and n.hint == top.hint and scores[n] > 0]
+             and n.hint == top.hint and scores[n] > 0
+             and n.parent is not None and n.parent.parent is group]
     if len(posts) >= 3:
         parts = posts
     # Inside the winner, drop link lists ("Read more: ...") and short crumbs.

@@ -264,11 +264,12 @@ on any story page.
   without a class or id never merges this way.
 - `tests/fixtures/live_blog.html` (synthetic, four posts plus a teaser
   column) and `test_live_blog_keeps_every_post`. It fails on the previous
-  extractor, which kept only the longest post.
+  extractor, which kept only the longest post. A second test checks that a
+  same-class container outside the feed is not merged in.
 
 **How verified**
 
-- `python -m pytest -q` on Python 3.11: 65 passed. The four older fixtures
+- `python -m pytest -q` on Python 3.11: 66 passed. The four older fixtures
   extract byte-for-byte the same as before.
 
 **What is left**

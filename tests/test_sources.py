@@ -154,3 +154,13 @@ def test_live_blog_keeps_every_post():
         assert post in out, post
     assert out.index("four seconds") < out.index("ferry timetable")
     assert "marathon" not in out and "Swimming pool" not in out
+
+
+def test_live_blog_merge_skips_lookalikes_outside_the_feed():
+    page = (FIXTURES / "live_blog.html").read_text().replace(
+        "</main>", '<div class="extra"><div><div class="post-content"><p>Unrelated '
+        "lookalike paragraph about the city budget, which sits outside the "
+        "live feed entirely.</p></div></div></div></main>")
+    out = extract_text(page)
+    assert "four seconds" in out and "ferry timetable" in out
+    assert "city budget" not in out
