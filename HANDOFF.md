@@ -258,8 +258,8 @@ on any story page.
 **What changed**
 
 - `pipeline/sources.py`: after the winner is picked, every candidate with
-  the same tag and the same class/id as the winner is treated as a post of
-  a live blog. With three or more, all of them are kept, in page order.
+  the same tag, class/id and grandparent (the feed) as the winner is treated
+  as a post of a live blog. With three or more, all of them are kept, in page order.
   Posts vary in length, so they match by shape, not by score. A winner
   without a class or id never merges this way.
 - `tests/fixtures/live_blog.html` (synthetic, four posts plus a teaser
