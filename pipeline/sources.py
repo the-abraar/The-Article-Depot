@@ -85,6 +85,7 @@ class _Node:
     children: list = field(default_factory=list)     # _Node or str
     skip: bool = False
     score: float = 0.0
+    hint: str = ""                                  # class + id
 
 
 class _TreeBuilder(HTMLParser):
@@ -103,7 +104,7 @@ class _TreeBuilder(HTMLParser):
         hint = " ".join(v or "" for k, v in attrs if k in ("class", "id"))
         unlikely = (tag not in ("html", "body", "article", "main")
                     and _UNLIKELY.search(hint) and not _LIKELY.search(hint))
-        node = _Node(tag, parent, skip=tag in _SKIP or bool(unlikely))
+        node = _Node(tag, parent, skip=tag in _SKIP or bool(unlikely), hint=hint)
         parent.children.append(node)
         if tag in ("p", "pre"):
             self.paragraphs.append(node)
@@ -177,6 +178,8 @@ def _article_text(raw_html: str) -> str:
     wins through the shared grandparent, while a teaser rail -- many short
     one-line items -- collects little. The winner's score is discounted by
     its link density, so a block of linked headlines cannot win on volume.
+    Three or more containers shaped like the winner (same tag and class) are
+    a live blog's posts and are all kept, in page order.
     shortcut: a body split across exactly two sibling divs is merged by score;
     odd layouts beyond that fall to the auditor -- add fixtures as they appear.
     """
@@ -212,6 +215,14 @@ def _article_text(raw_html: str) -> str:
     # a teaser item or promo beside it does not.
     parts = [n for n in top.parent.children
              if n is top or scores.get(n, 0) >= scores[top] / 2]
+    # A live blog: one container per post, each a cousin of the winner (same
+    # grandparent, tag and class). Posts vary in length: match shape, not score.
+    group = top.parent and top.parent.parent
+    posts = [n for n in candidates if top.hint and n.tag == top.tag
+             and n.hint == top.hint and scores[n] > 0
+             and n.parent is not None and n.parent.parent is group]
+    if len(posts) >= 3:
+        parts = posts
     # Inside the winner, drop link lists ("Read more: ...") and short crumbs.
     keep = [t for n in parts for t, k in _blocks(n)
             if len(t) > 40 and k / len(t) <= 0.5]
