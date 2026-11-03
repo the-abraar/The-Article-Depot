@@ -58,7 +58,10 @@ def extract_text(raw_html: str, max_chars: int = 6000) -> str:
         text = ""
     if not text:
         text = _strip_text(raw_html)
-    return text[:max_chars]
+    if len(text) > max_chars:   # cut at a paragraph so no claim is half-quoted
+        cut = text.rfind("\n\n", 0, max_chars + 1)
+        text = text[:cut] if cut > 0 else text[:max_chars]
+    return text
 
 
 # --- main-content extraction ------------------------------------------------
@@ -85,7 +88,7 @@ class _Node:
     children: list = field(default_factory=list)     # _Node or str
     skip: bool = False
     score: float = 0.0
-    hint: str = ""                                  # class + id
+    cls: frozenset = frozenset()                    # class tokens
 
 
 class _TreeBuilder(HTMLParser):
@@ -104,7 +107,8 @@ class _TreeBuilder(HTMLParser):
         hint = " ".join(v or "" for k, v in attrs if k in ("class", "id"))
         unlikely = (tag not in ("html", "body", "article", "main")
                     and _UNLIKELY.search(hint) and not _LIKELY.search(hint))
-        node = _Node(tag, parent, skip=tag in _SKIP or bool(unlikely), hint=hint)
+        cls = frozenset(" ".join(v or "" for k, v in attrs if k == "class").split())
+        node = _Node(tag, parent, skip=tag in _SKIP or bool(unlikely), cls=cls)
         parent.children.append(node)
         if tag in ("p", "pre"):
             self.paragraphs.append(node)
@@ -178,8 +182,9 @@ def _article_text(raw_html: str) -> str:
     wins through the shared grandparent, while a teaser rail -- many short
     one-line items -- collects little. The winner's score is discounted by
     its link density, so a block of linked headlines cannot win on volume.
-    Three or more containers shaped like the winner (same tag and class) are
-    a live blog's posts and are all kept, in page order.
+    Three or more containers shaped like the winner (same tag, a shared class
+    token, same grandparent) are a live blog's posts and are all kept, in page
+    order. Live blogs list newest first, so extract_text's cap keeps the latest.
     shortcut: a body split across exactly two sibling divs is merged by score;
     odd layouts beyond that fall to the auditor -- add fixtures as they appear.
     """
@@ -216,16 +221,19 @@ def _article_text(raw_html: str) -> str:
     parts = [n for n in top.parent.children
              if n is top or scores.get(n, 0) >= scores[top] / 2]
     # A live blog: one container per post, each a cousin of the winner (same
-    # grandparent, tag and class). Posts vary in length: match shape, not score.
+    # grandparent, tag and a class token). Posts vary in length: match shape,
+    # not score. Per-post ids and extra tokens ("post is-pinned") still match.
     group = top.parent and top.parent.parent
-    posts = [n for n in candidates if top.hint and n.tag == top.tag
-             and n.hint == top.hint and scores[n] > 0
+    posts = [n for n in candidates if top.cls and n.tag == top.tag
+             and n.cls & top.cls and scores[n] > 0
              and n.parent is not None and n.parent.parent is group]
+    min_len = 40
     if len(posts) >= 3:
         parts = posts
+        min_len = 24            # a post's one-line update is a candidate (>= 25), keep it
     # Inside the winner, drop link lists ("Read more: ...") and short crumbs.
     keep = [t for n in parts for t, k in _blocks(n)
-            if len(t) > 40 and k / len(t) <= 0.5]
+            if len(t) > min_len and k / len(t) <= 0.5]
     return "\n\n".join(keep)
 
 

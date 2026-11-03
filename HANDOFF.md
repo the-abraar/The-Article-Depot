@@ -279,3 +279,15 @@ on any story page.
   post id in `class`) will not match and still keeps one post.
 - Page 6's nav line in the stripper fallback is unchanged.
 - Steps 1, 3 and 4 still need an API key. The workflow is still paused.
+
+## 2026-11-03: live-blog follow-ups from the PR #1 review
+
+- Posts now match on a shared class token, not the exact class+id string, so
+  per-post ids and state classes (`is-pinned`) no longer split the feed.
+- Selected posts keep blocks of 25+ chars (was 40+), so a one-line update
+  that qualified as a candidate is not dropped.
+- `extract_text` cuts at a paragraph boundary under its 6,000-char cap. The
+  cap stays (prompt budget across up to 6 sources); live blogs run newest
+  first, so the latest posts survive. A 12k live blog still loses its oldest half.
+- Not changed: "nested posts read twice". The same-grandparent rule from
+  5ed2a54 already makes a nested post ineligible next to its outer post.

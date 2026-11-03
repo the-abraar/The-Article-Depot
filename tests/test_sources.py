@@ -164,3 +164,33 @@ def test_live_blog_merge_skips_lookalikes_outside_the_feed():
     out = extract_text(page)
     assert "four seconds" in out and "ferry timetable" in out
     assert "city budget" not in out
+
+
+def test_live_blog_posts_match_with_unique_ids_and_extra_classes():
+    # CodeRabbit on PR #1: posts often carry per-post ids or state classes.
+    page = (FIXTURES / "live_blog.html").read_text()
+    for i, extra in enumerate(("", " is-pinned", " has-media", "")):
+        page = page.replace('<div class="post-content">',
+                            f'<div class="post-content{extra}" id="p{i}">', 1)
+    out = extract_text(page)
+    for post in ("four seconds", "eight knots", "wrist injury", "ferry timetable"):
+        assert post in out, post
+    assert "marathon" not in out
+
+
+def test_live_blog_keeps_a_short_post():
+    page = (FIXTURES / "live_blog.html").read_text().replace(
+        "<p>Spectator boats", "<p>Race two is postponed by an hour.</p><p>Spectator boats", 1)
+    page = page.replace("<p>Spectator boats are being moved back behind the buoy line, "
+                        "and the harbour master says the ferry timetable will run as "
+                        "normal all afternoon.</p>", "")
+    out = extract_text(page)
+    assert "Race two is postponed by an hour." in out
+
+
+def test_cap_cuts_at_a_paragraph_boundary():
+    page = "<article>" + "".join(
+        f"<p>Paragraph {i} says something long enough to count, with a comma, and more.</p>"
+        for i in range(200)) + "</article>"
+    out = extract_text(page, max_chars=1000)
+    assert len(out) <= 1000 and out.endswith("more.")
