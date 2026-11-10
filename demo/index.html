@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Article Depot: demo</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1d1b;--mut:#66635c;--line:#dedad0;--card:#fff;--warn:#fff4d6;--warnb:#c99a1b;--ok:#2f7d4a;--bad:#b23b2e;--mid:#a46b00}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--mut:#a5a39b;--line:#3a3934;--card:#1f1f1c;--warn:#3a3016;--warnb:#c99a1b;--ok:#6cc08a;--bad:#ef8576;--mid:#e0b050}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.7rem;margin:.2em 0}h2{font-size:1.2rem;margin:2em 0 .5em}
+p,li{color:var(--fg);overflow-wrap:anywhere}small,.mut{color:var(--mut)}
+.banner{background:var(--warn);border:2px solid var(--warnb);border-radius:8px;padding:12px 14px;margin:0 0 20px}
+.status{display:inline-block;font-weight:700;border:2px solid var(--bad);color:var(--bad);border-radius:6px;padding:2px 10px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.flow span{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:.9rem}
+.flow b{color:var(--mut);font-weight:400}
+.flow .gate{border-color:var(--warnb)}
+.flow .never{border-style:dashed;color:var(--mut)}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+.v-clean{color:var(--ok)}.v-bad{color:var(--bad)}.v-mid{color:var(--mid)}
+.trend{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0}
+.trend h3{margin:0 0 4px;font-size:1rem}.trend ul{margin:0;padding-left:18px}
+.trend a{color:inherit;word-break:break-word}
+ol.layers>li{margin-bottom:10px}
+code{font-size:.88em;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+</style>
+</head>
+<body>
+<main>
+<div class="banner" role="note"><strong>What is real and what is not.</strong> Nothing on this page was written by a model. The pipeline has never run against the real API and has published nothing. The trends snapshot below is a real fetch of one public feed, kept as titles and links only. The extraction table is from a real fetch-only run on 22 Oct 2026. The veto reasons are the rules in the code, not results.</div>
+
+<h1>The Article Depot</h1>
+<p>An unattended pipeline meant to read Google Trends, write explainers grounded in the news behind each trend, veto anything it can't support, and prune pages when the topic goes cold.</p>
+<p><span class="status">Status: 0 articles published</span> <small class="mut">Built and tested offline (69 tests, no network). Never launched: the daily workflow has been disabled since 21 Aug 2026 and has 0 runs.</small></p>
+
+<h2>Pipeline</h2>
+<div class="flow" aria-label="pipeline stages">
+<span>Trends RSS</span><b>→</b><span>polite fetch<br><small>robots.txt, 2 s delay, backoff</small></span><b>→</b><span>extract sources<br><small>≥ 2 or skip</small></span><b>→</b><span class="never">writer call<br><small>never run</small></span><b>→</b><span class="gate never">3-layer veto<br><small>audit never run</small></span><b>→</b><span class="never">publish / prune<br><small>0 pages</small></span>
+</div>
+<p class="mut">Solid boxes have run against real sites. Dashed boxes have only run in tests, against scripted model replies.</p>
+
+<h2>The veto: any layer rejects</h2>
+<ol class="layers">
+<li><strong>Structure</strong> (free). Rejects: under 400 or over 1,600 words; fewer than 2 sections; empty title or over 120 characters; no recorded claims; placeholder text; a claim citing a source that was never fetched; a section with no paragraphs.</li>
+<li><strong>Duplicate</strong> (free). Rejects: word-set similarity 0.6 or more against any published article.</li>
+<li><strong>Grounding audit</strong> (a second model call). Rejects: grounding or clarity below 4 of 5; any verdict other than "publish"; even one claim the sources don't support.</li>
+</ol>
+<p class="mut">Source: <code>pipeline/quality.py</code>, thresholds in <code>pipeline/config.py</code>. Each rejection is stored with its reason.</p>
+
+<h2>Extraction on 8 live pages (22 Oct 2026)</h2>
+<p class="mut">Fetch only, no model, nothing published. One page each from 8 hosts in the US feed. From <code>HANDOFF.md</code>.</p>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>Page</th><th>Extracted</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Yahoo Sports, story</td><td>4,560 chars</td><td class="v-clean">Clean: body only, no teasers</td></tr>
+<tr><td>1</td><td>Yahoo Actualités (fr), story</td><td>2,071</td><td class="v-clean">Clean</td></tr>
+<tr><td>2</td><td>Yahoo, video page</td><td>351</td><td class="v-bad">Bad: an unrelated teaser card instead of the caption (fixed the same day, with a fixture)</td></tr>
+<tr><td>3</td><td>Yahoo Malaysia (Deadline syndication), photo story</td><td>2,365</td><td class="v-clean">Clean, plus a one-line newsletter plug</td></tr>
+<tr><td>4</td><td>Pulse Sports Nigeria, story</td><td>3,110</td><td class="v-clean">Clean, plus an image credit and an embedded tweet</td></tr>
+<tr><td>5</td><td>Yardbarker, story</td><td>1,040</td><td class="v-clean">Clean</td></tr>
+<tr><td>6</td><td>Eurosport (fr), live commentary</td><td>1,773</td><td class="v-mid">Usable: one nav line and a repeated headline leak</td></tr>
+<tr><td>7</td><td>Le Figaro (fr), live blog</td><td>804</td><td class="v-mid">Under-extracted: kept one post of 99 (merge rule added 30 Oct, not re-run live)</td></tr>
+</tbody></table></div>
+
+<h2>One Bangladesh trends snapshot</h2>
+<p class="mut" id="snapmeta"></p>
+<div id="trends"></div>
+<noscript><p>The snapshot needs JavaScript to render; the raw data is in <code>demo/data/bd_trends.json</code>.</p></noscript>
+
+<h2>Read more</h2>
+<p><code>LEARNINGS.md</code> (what this taught, including a cost ceiling) and <code>HANDOFF.md</code> in the repository.</p>
+</main>
+<script id="snapshot" type="application/json">{"fetched_at":"2026-11-10T11:51:09Z","feed":"https://trends.google.com/trending/rss?geo=BD","status":200,"trends":[{"title":"17","traffic":"100+","sources":[{"publisher":"Dhaka Tribune","title":"17-year-old boy injured in crude bomb blast in Malibagh","url":"https://www.dhakatribune.com/bangladesh/dhaka/424199/17-year-old-boy-injured-in-crude-bomb-blast-in"},{"publisher":"TheReport.live","title":"Crude bomb explosion injures 17-year-old boy in Malibagh","url":"https://thereport.live/metropolitan/crude-bomb-explosion-injures-17-year-old-boy-in-malibagh/42624"},{"publisher":"The Business Standard","title":"17-year-old boy injured in crude bomb blast in Dhaka's Malibagh","url":"https://www.tbsnews.net/bangladesh/17-year-old-boy-injured-crude-bomb-blast-dhakas-malibagh-1598111"}]},{"title":"নুসরাত ইমরোজ তিশা","traffic":"100+","sources":[{"publisher":"FNS24","title":"সানগ্লাস চোখে নতুন লুকে তিশা","url":"https://www.fns24.com/single/92051/%E0%A6%B8%E0%A6%BE%E0%A6%A8%E0%A6%97%E0%A7%8D%E0%A6%B2%E0%A6%BE%E0%A6%B8-%E0%A6%9A%E0%A7%8B%E0%A6%96%E0%A7%87-%E0%A6%A8%E0%A6%A4%E0%A7%81%E0%A6%A8-%E0%A6%B2%E0%A7%81%E0%A6%95%E0%A7%87-%E0%A6%A4%E0%A6%BF%E0%A6%B6%E0%A6%BE"},{"publisher":"MTnews24","title":"সংসার ভাঙ্গার গুঞ্জন! এবার যা বললেন তিশা","url":"https://bn.mtnews24.com/binodon/582013/%E0%A6%B8%E0%A6%82%E0%A6%B8%E0%A6%BE%E0%A6%B0-%E0%A6%AD%E0%A6%BE%E0%A6%99%E0%A7%8D%E0%A6%97%E0%A6%BE%E0%A6%B0-%E0%A6%97%E0%A7%81%E0%A6%9E%E0%A7%8D%E0%A6%9C%E0%A6%A8--%E0%A6%8F%E0%A6%AC%E0%A6%BE%E0%A6%B0-%E0%A6%AF%E0%A6%BE-%E0%A6%AC%E0%A6%B2%E0%A6%B2%E0%A7%87%E0%A6%A8-%E0%A6%A4%E0%A6%BF%E0%A6%B6%E0%A6%BE"},{"publisher":"Sobar Desh","title":"নতুন লুকে তিশা, সফল ইভেন্ট শেষ","url":"https://www.sobardeshbd.com/entertainment/news/14365"}]},{"title":"জিতু কামাল","traffic":"100+","sources":[{"publisher":"ABP Ananda","title":"Rajveer-Nandini: বিগ বস থেকে ফিরে, পরিবারের সঙ্গে দীপাবলি উদযাপন নন্দিনীর, সঙ্গে রাজবীরের ছবি!","url":"https://bengali.abplive.com/photo-gallery/entertainment/nandini-dutta-celebrated-diwali-with-family-keep-rajveer-photo-with-her-entertainment-news-tollywood-1198779"},{"publisher":"News18 Bengali","title":"Nandini Dutta Rajveer Dey: বিগ বসের বাড়ি থেকে বেরিয়েও নন্দিনীর পাশে রাজবীর! একসঙ্গে কাটালেন দিওয়ালির রাত, দেখুন","url":"https://bengali.news18.com/photogallery/entertainment/nandini-dutta-celebrates-diwali-with-rajveer-close-to-him-even-after-coming-out-from-bigg-boss-house-pbd-2956833.html"},{"publisher":"Anandabazar Patrika","title":"লক্ষ্মীপুজোয় ভরত-বিদায়, দীপাবলিতে নন্দিনী! উৎসবের মরসুমে বিগবসের বাড়িতে এবার কার বিদায়ের ঘণ্টা?","url":"https://www.anandabazar.com/ananda-utsav/celebrities-during-puja/who-will-be-the-next-bigg-boss-contestant-to-face-eviction-dgtl/cid/1724954"}]},{"title":"শুভশ্রী গঙ্গোপাধ্যায়","traffic":"100+","sources":[{"publisher":"Anandabazar Patrika","title":"‘আমাদের কোনও ঝগড়া ছিল না,’ কালীপুজোয় বোন শুভশ্রীর সঙ্গে দূরত্ব ঘুচল? অবস্থান স্পষ্ট করলেন দেবশ্রী","url":"https://www.anandabazar.com/entertainment/subhashree-ganguly-fight-with-elder-sister-deboshree-ganguly-resolved-know-tollywood-industry-gossips-dgtl/cid/1725183"},{"publisher":"News18 Bengali","title":"Subhashree Ganguly Dhuno Pora: মাথায় ও দু’হাতে ধরা মালসা, ধুনো পোড়ালেন শুভশ্রী, বাপের বাড়ির কালীপুজোতে লেডি সুপারস্টার, দেখুন ছবি","url":"https://bengali.news18.com/photogallery/entertainment/subhashree-ganguly-kalipuja-dhuno-pora-at-her-bardhaman-house-l18t-pbd-local18-2957063.html"},{"publisher":"Sangbad Pratidin","title":"মাথায়-দুহাতে জ্বলন্ত আগুন, কালীপুজোয় লেডি সুপারস্টার শুভশ্রীর ভক্তিরূপে মুগ্ধ নেটপাড়া","url":"https://www.sangbadpratidin.in/entertainment/cinema/subhasree-ganguly-observes-strict-rituals-during-kali-puja/pid/1420494/"}]},{"title":"হিরো আলম","traffic":"1000+","sources":[{"publisher":"Daily Naya Diganta","title":"১২ বছরে ৫ জনকে বিয়ে : পরীমণির প্রেম বিয়ে বিচ্ছেদের ফিরিস্তি","url":"https://dailynayadiganta.com/post/entertainment/1067916"},{"publisher":"দ্য ডেইলি স্টার বাংলা","title":"সাংবাদিক হয়রানির অভিযোগে পরীমণিকে আইনি নোটিশ","url":"https://bangla.thedailystar.net/news/bangladesh/crime-justice/news-3978761"},{"publisher":"The Daily Ittefaq","title":"সাংবাদিকদের প্রতিবাদে চট্টগ্রামের অ্যাওয়ার্ড অনুষ্ঠান থেকে বাদ পরীমনি","url":"https://www.ittefaq.com.bd/819598/%E0%A6%B8%E0%A6%BE%E0%A6%82%E0%A6%AC%E0%A6%BE%E0%A6%A6%E0%A6%BF%E0%A6%95%E0%A6%A6%E0%A7%87%E0%A6%B0-%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%A4%E0%A6%BF%E0%A6%AC%E0%A6%BE%E0%A6%A6%E0%A7%87-%E0%A6%9A%E0%A6%9F%E0%A7%8D%E0%A6%9F%E0%A6%97%E0%A7%8D%E0%A6%B0%E0%A6%BE%E0%A6%AE%E0%A7%87%E0%A6%B0-%E0%A6%85%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%93%E0%A7%9F%E0%A6%BE%E0%A6%B0%E0%A7%8D%E0%A6%A1"}]},{"title":"আসাদ নূর","traffic":"100+","sources":[{"publisher":"Jugantor","title":"যে কারণে পারশাকে বিয়ে করে গোপন রেখেছিলেন আসাদ নূর","url":"https://www.jugantor.com/entertainment/1182065"},{"publisher":"The Daily Ittefaq","title":"পারশার সঙ্গে বিয়ের কথা স্বীকার আসাদ নূরের, জানালেন নাটকীয়তার কারণও","url":"https://www.ittefaq.com.bd/820045/%E0%A6%AA%E0%A6%BE%E0%A6%B0%E0%A6%B6%E0%A6%BE%E0%A6%B0-%E0%A6%B8%E0%A6%99%E0%A7%8D%E0%A6%97%E0%A7%87-%E0%A6%AC%E0%A6%BF%E0%A7%9F%E0%A7%87%E0%A6%B0-%E0%A6%95%E0%A6%A5%E0%A6%BE-%E0%A6%B8%E0%A7%8D%E0%A6%AC%E0%A7%80%E0%A6%95%E0%A6%BE%E0%A6%B0-%E0%A6%86%E0%A6%B8%E0%A6%BE%E0%A6%A6-%E0%A6%A8%E0%A7%82%E0%A6%B0%E0%A7%87%E0%A6%B0-%E0%A6%9C%E0%A6%BE%E0%A6%A8%E0%A6%BE%E0%A6%B2%E0%A7%87%E0%A6%A8"},{"publisher":"Jagonews24","title":"ধর্ম মেনে নয়, যে দেশের আইনে বিয়ে করেছেন আসাদ নূর ও পারশা","url":"https://www.jagonews24.com/entertainment/news/1177712"}]},{"title":"রোহিত শর্মা","traffic":"100+","sources":[{"publisher":"Anandabazar Patrika","title":"বৃষ্টিতে ভেস্তে গেল ভারত-নিউ জ়িল্যান্ড তৃতীয় এক দিনের ম্যাচ! ৫০ ওভারের সিরিজ়ও আর হারার সম্ভাবনা নেই গম্ভীরদের","url":"https://www.anandabazar.com/sports/cricket/team-india-vs-new-zealand-3rd-odi-abandoned-due-to-rain-dgtl/cid/1725340"},{"publisher":"bdnews24.com","title":"দেশের মাটিতে নিউ জিল‍্যান্ডের অজেয় যাত্রা থামল বৃষ্টিতে","url":"https://bangla.bdnews24.com/cricket/8csv6pr8py"},{"publisher":"News18 Bengali","title":"Star Players Out: ৩ জন প্লেয়ার আউট, ৩ জন নতুন ইন, নিউজিল্যান্ডের বিরুদ্ধে সিরিজের মধ্যে ভারতীয় দলে মেগা চেঞ্জ","url":"https://bengali.news18.com/photogallery/sports/big-change-in-team-india-squad-shubman-gill-kl-rahul-out-3-players-in-full-list-of-changes-in-india-squad-for-4th-and-5th-odis-dd-2958500.html"}]},{"title":"dale benkenstein","traffic":"500+","sources":[{"publisher":"Cricinfo","title":"Dale Benkenstein appointed Bangladesh's batting specialist ahead of SA tour","url":"https://www.cricinfo.com/story/ban-vs-sa-dale-benkenstein-appointed-bangladesh-batting-specialist-ahead-of-sa-tour-1562055"},{"publisher":"Cricbuzz","title":"Maketa to oversee Bangladesh's fielding unit on SA tour; Benkenstein joins as batting specialist","url":"https://www.cricbuzz.com/cricket-news/140851/maketa-to-oversee-bangladeshs-fielding-unit-on-south-africa-tour-cricbuzzcom"},{"publisher":"The Daily Star","title":"Benkenstein's Bangladesh story comes full circle, 24 years on","url":"https://www.thedailystar.net/sports/cricket/news/benkensteins-bangladesh-story-comes-full-circle-24-years-4319701"}]},{"title":"শিক্ষাবৃত্তি","traffic":"1000+","sources":[{"publisher":"Amar Desh","title":"৫৮ লাখ টাকার শিক্ষাবৃত্তি পেলেন চুনারুঘাটের তাসনিম","url":"https://www.dailyamardesh.com/bangladesh/sylhet/amdh9cdo9anhk"},{"publisher":"শিক্ষাবার্তা ডট কম","title":"৫৮ লাখ টাকার শিক্ষাবৃত্তি পেলেন তাসনিম","url":"https://shikshabarta.com/241922/"},{"publisher":"Channel i Online","title":"৫৮ লাখ টাকার শিক্ষাবৃত্তি পেলেন চুনারুঘাটের তাসনিম","url":"https://www.channelionline.com/tasnim-from-chunarughat-receives-a-scholarship-worth-5-8-million-taka"}]},{"title":"aryavir sehwag","traffic":"2000+","sources":[{"publisher":"Sportscape Magazine","title":"“The Kohli Way As Well”: Aaryavir Sehwag On His Playing Style Inspiration","url":"https://www.sportscapemagazine.com/blog/the-kohli-way-as-well-aaryavir-sehwag-on-his-playing-style-inspiration"},{"publisher":"Sportsdunia","title":"How Can Team India Qualify for U19 Asia Cup 2026 Semifinal? Scenarios Explained","url":"https://www.sportsdunia.com/cricket-news/how-can-team-india-qualify-u19-asia-cup-semifinal-2026-ind-vs-uae"},{"publisher":"The Times of India","title":"IND vs UAE, Under-19 Asia Cup Live Score: UAE in deep trouble! Aryan Savsani strikes as India claim fifth wicket","url":"https://timesofindia.indiatimes.com/sports/cricket/india-under-19-vs-united-arab-emirates-under-19-asia-cup-cricket-live-score-aaryavir-sehwag-anvay-dravid-yashbardhan-chauhan/liveblog/135699196.cms"}]}]}</script>
+<script>
+const d = JSON.parse(document.getElementById("snapshot").textContent);
+document.getElementById("snapmeta").textContent =
+  `Fetched ${d.fetched_at} from ${d.feed} with the repo's PoliteFetcher (HTTP ${d.status}). ${d.trends.length} trends. Titles and links only; no page text is copied. These are what the pipeline would have tried to write about.`;
+const box = document.getElementById("trends");
+for (const t of d.trends) {
+  const el = document.createElement("div"); el.className = "trend";
+  const h = document.createElement("h3"); h.textContent = t.title + (t.traffic ? `  ·  ${t.traffic} searches` : ""); el.append(h);
+  const ul = document.createElement("ul");
+  for (const s of t.sources) {
+    const li = document.createElement("li"), a = document.createElement("a");
+    a.href = /^https?:\/\//.test(s.url) ? s.url : "#"; a.rel = "noopener noreferrer nofollow"; a.textContent = s.title;
+    li.append(a, ` (${s.publisher})`); ul.append(li);
+  }
+  el.append(ul); box.append(el);
+}
+</script>
+</body>
+</html>

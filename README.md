@@ -30,7 +30,7 @@ export DEPOT_CONTACT_EMAIL=you@example.com
 .venv/bin/depot publish        # rebuild the site from the database
 ```
 
-Runs daily in CI via `.github/workflows/daily.yml`.
+`.github/workflows/daily.yml` is written to run this daily, but it has been disabled since 2026-08-21 and has never run: 0 articles published so far. See `LEARNINGS.md` and the status page in `demo/`.
 
 ## The two hard questions
 
