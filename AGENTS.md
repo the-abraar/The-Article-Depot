@@ -1,0 +1,1 @@
+Frozen until the owner unfreezes it: code frozen; only the CV truth, a demo page, and (with a spend-capped key) one supervised run. Call source: `~/Everything/dev/products/decision.md` (labs under the November bet).
