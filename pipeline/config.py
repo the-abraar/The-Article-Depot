@@ -13,31 +13,36 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+def _env(name: str, default: str) -> str:
+    value = os.environ.get(name, "")
+    return value if value.strip() else default
+
+
 def _int(name: str, default: int) -> int:
-    return int(os.environ.get(name, default))
+    return int(_env(name, str(default)))
 
 
 def _float(name: str, default: float) -> float:
-    return float(os.environ.get(name, default))
+    return float(_env(name, str(default)))
 
 
 @dataclass(frozen=True)
 class Config:
     # --- where things live -------------------------------------------------
     db_path: Path = field(default_factory=lambda: Path(
-        os.environ.get("DEPOT_DB", REPO_ROOT / "depot.db")))
+        _env("DEPOT_DB", str(REPO_ROOT / "depot.db"))))
     site_dir: Path = field(default_factory=lambda: Path(
-        os.environ.get("DEPOT_SITE", REPO_ROOT / "site")))
+        _env("DEPOT_SITE", str(REPO_ROOT / "site"))))
     template_dir: Path = field(default_factory=lambda: REPO_ROOT / "templates")
 
     # Shown on the contact page. Set DEPOT_CONTACT_EMAIL before publishing --
     # the default is deliberately not a real address.
-    contact_email: str = os.environ.get(
+    contact_email: str = _env(
         "DEPOT_CONTACT_EMAIL", "corrections@example.com")
 
     # --- trend ingestion ---------------------------------------------------
-    geo: str = os.environ.get("DEPOT_GEO", "US")
-    trends_url: str = os.environ.get(
+    geo: str = _env("DEPOT_GEO", "US")
+    trends_url: str = _env(
         "DEPOT_TRENDS_URL", "https://trends.google.com/trending/rss")
     max_trends_per_run: int = _int("DEPOT_MAX_TRENDS", 5)
 
@@ -45,7 +50,7 @@ class Config:
     # A real, contactable UA is the difference between a crawler that gets
     # tolerated and one that gets IP-banned. Point it at a page a site owner
     # can actually read.
-    user_agent: str = os.environ.get(
+    user_agent: str = _env(
         "DEPOT_UA",
         "ArticleDepotBot/1.0 (+https://github.com/the-abraar/The-Article-Depot)")
     # Floor on the gap between two requests to the same host. robots.txt
@@ -63,8 +68,8 @@ class Config:
     min_sources: int = _int("DEPOT_MIN_SOURCES", 2)
 
     # --- generation --------------------------------------------------------
-    model: str = os.environ.get("DEPOT_MODEL", "claude-opus-5")
-    auditor_model: str = os.environ.get("DEPOT_AUDITOR_MODEL", "claude-opus-5")
+    model: str = _env("DEPOT_MODEL", "claude-opus-5")
+    auditor_model: str = _env("DEPOT_AUDITOR_MODEL", "claude-opus-5")
     max_tokens: int = _int("DEPOT_MAX_TOKENS", 16000)
 
     # --- quality gate ------------------------------------------------------
